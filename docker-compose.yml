@@ -10,6 +10,7 @@ services:
       - .env
     networks:
       - backend
+    restart: unless-stopped
 
 networks:
   backend:
