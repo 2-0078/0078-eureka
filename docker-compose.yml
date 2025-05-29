@@ -2,15 +2,15 @@ version: "3.8"
 
 services:
   eureka:
-    build: .
     container_name: eureka-server
+    image: ${DOCKER_USERNAME}/eureka:latest
     ports:
       - "8761:8761"
     env_file:
       - .env
     networks:
       - backend
-    restart: unless-stopped
 
 networks:
   backend:
+    external: true
