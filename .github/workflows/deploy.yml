@@ -72,6 +72,6 @@ jobs:
             mv docker-compose.remote.yml docker-compose.yml
           
             docker compose pull
-            docker compose down
+            docker rm -f eureka-server || true
             docker compose --env-file .env up -d
           EOF
