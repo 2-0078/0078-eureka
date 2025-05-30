@@ -13,7 +13,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           java-version: '17'
@@ -36,8 +36,8 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
-          echo "EUREKA_HOST=${{ secrets.EUREKA_HOST }}" >>.env
+          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" > .env
+          echo "EUREKA_HOST=${{ secrets.EUREKA_HOST }}" >> .env
 
       - name: Build and Push Docker Image to Docker Hub
         uses: docker/build-push-action@v5
@@ -57,18 +57,19 @@ jobs:
           ssh -i eureka-key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
           "mkdir -p /home/${{ secrets.EC2_USER }}/eureka"
 
-      - name: Copy docker-compose.yml to EC2
+      - name: Copy docker-compose.yml and .env to EC2
         run: |
           sed "s|\${DOCKER_USERNAME}|${{ secrets.DOCKER_USERNAME }}|g" docker-compose.yml > docker-compose.remote.yml
-          
+
           scp -i eureka-key.pem -o StrictHostKeyChecking=no \
-          docker-compose.remote.yml \
-          ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/eureka/docker-compose.yml
+            docker-compose.remote.yml .env \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/eureka/
 
       - name: Remote Docker Compose Pull & Up
         run: |
           ssh -i eureka-key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/eureka
+            mv docker-compose.remote.yml docker-compose.yml
             docker compose pull
-            docker-compose up -f docker-compose.remote.yml -d
+            docker compose --env-file .env up -d
           EOF
